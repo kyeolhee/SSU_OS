@@ -14,6 +14,7 @@ START:
 	mov ax, 0xB800
 	mov es, ax
 
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	; Create code by sector;
 	%assign i	0
 	%rep TOTALSECTORCOUNT
@@ -21,7 +22,7 @@ START:
 
 		mov ax, 2
 		mul word [SECTORCOUNT]
-		mov si, ax
+		;mov si, ax
 		;mov byte [es: si + (160 * 2)], '0' + (i % 10)
 		;add word [SECTORCOUNT], 1
 
@@ -33,3 +34,4 @@ START:
 
 		times (512 - ($ - $$) % 512)	db 0x00
 	%endrep
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

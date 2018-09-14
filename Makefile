@@ -35,6 +35,7 @@ Disk.img: BootLoader Kernel32
 
 run:
 	qemu-system-x86_64 -L . -fda Disk.img -m 64 -localtime -M pc
+	qemu-system-x86_64 -rtc base=localtime
 	
 clean:
 	make -C 00.BootLoader clean

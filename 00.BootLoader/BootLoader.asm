@@ -36,9 +36,16 @@ START:
 	call	PRINTMESSAGE
 	add	sp,	6
 
+; "TIME" 	message ;
+	push 	TIMEMESSAGE
+	push 	1
+	push	0
+	call	PRINTMESSAGE
+	add	sp,	6
+
 ; "OS IMAGE LOADING" message ;
 	push	IMAGELOADINGMESSAGE
-	push	1
+	push	2
 	push	0
 	call	PRINTMESSAGE
 	add	sp,	6
@@ -99,7 +106,7 @@ READEND:
 
 	;"OS IMAGE COMPLETE" message;
 	push LOADINGCOMPLETEMESSAGE
-	push 1
+	push 2
 	push 20
 	call PRINTMESSAGE
 	add sp,	6
@@ -168,6 +175,7 @@ PRINTMESSAGE:
 	
 ;DATA;
 MESSAGE1:    db 'MINT64 OS Boot Loader Start~!!', 0
+TIMEMESSAGE:	db	'Currunt TIme : ', 0
 
 DISKERRORMESSAGE:		db	'DISK Error~!!', 0
 IMAGELOADINGMESSAGE:	db	'OS Image Loading...', 0
