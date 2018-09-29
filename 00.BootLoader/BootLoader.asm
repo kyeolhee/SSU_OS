@@ -8,6 +8,9 @@ jmp 0x07C0:START
 TOTALSECTORCOUNT:	dw	1024
 
 START:
+
+
+
     mov ax, 0x07C0
     mov ds, ax
     mov ax, 0xB800
@@ -41,58 +44,69 @@ START:
 	push 	1
 	push	0
 	call	PRINTMESSAGE
-	add	sp,	6
+	;add	sp,	6
+
 
 ; TIME PRINT ;
-	mov ah,2h
+    mov ah,2h
     int 1ah
 
     mov ah, 0x0e
     mov al, CH
     and al,0xf0
     shr al,0x04
-    add al,0x30   
-    int 0x10
+    add al,0x30
+    mov byte [ es : (160*1)+32],al   
+    ;int 0x10
 
     mov al, CH
     and al,0x0f
-    add al,0x30
-    int 0x10
+    add al,0x30    
+    mov byte [ es : (160*1)+34],al 
+
+    ;int 0x10
     
 
     mov ah, 0x0e
     mov al, ":"
-    int 0x10
+    mov byte [ es : (160*1)+36],al 
+    ;int 0x10
 
 
     mov ah, 0x0e
     mov al, CL
     and al,0xf0
     shr al,0x04
-    add al,0x30   
-    int 0x10
+    add al,0x30
+    mov byte [ es : (160*1)+38],al    
+    ;int 0x10
 
     mov al, CL
     and al,0x0f
     add al,0x30
-    int 0x10
+    mov byte [ es : (160*1)+40],al 
+    ;int 0x10
 
     mov ah, 0x0e
     mov al, ":"
-    int 0x10
+    mov byte [ es : (160*1)+42],al 
+    ;int 0x10
 
 
     mov ah, 0x0e
     mov al, DH
     and al,0xf0
     shr al,0x04
-    add al,0x30   
-    int 0x10
+    add al,0x30
+    mov byte [ es : (160*1)+44],al    
+    ;int 0x10
 
     mov al, DH
     and al,0x0f
     add al,0x30
-    int 0x10
+    mov byte [ es : (160*1)+46],al 
+    ;int 0x10
+
 
 ; "OS IMAGE LOADING" message ;
 	push	IMAGELOADINGMESSAGE
