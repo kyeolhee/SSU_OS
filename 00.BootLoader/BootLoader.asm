@@ -1,242 +1,309 @@
-[ORG 0x00]
-[BITS 16]
+[ORG 0x00]              ; Start code Address 0x00          
+[BITS 16]               ; code size 16-bit
 
-SECTION .text
+SECTION .text           ; text section
 
-jmp 0x07C0:START
+jmp 0x7C0:START        ; copy 0x07c0 to CS & jump to START
 
-TOTALSECTORCOUNT:	dw	1024
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   MINT64 OS Preperense
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+TOTALSECTORCOUNT:   dw  0x03    ; size of MINT64 OS (MAX 1152sector)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   Code
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 START:
-    mov ax, 0x07C0
-    mov ds, ax
-    mov ax, 0xB800
-    mov es, ax
+    mov ax, 0x7C0  
+    mov ds, ax      ; ds = Start address (Bootloader)
+    mov ax, 0xB800  
+    mov es, ax      ; es = Start address (Video Memory)
 
-	mov	ax,	0x0000
-	mov	ss,	ax
-	mov	sp,	0xFFFE
-	mov	bp,	0xFFFE
-   
-   ; Clear & color=grean;
-    mov	si,		0 
+    ; Stak : 0x0000:0000~0x0000:FFFF (size 64KB)
+    mov ax, 0x0000  
+    mov ss, ax      ; ss = Start address (Stack segment)
+    mov sp, 0xFFFE  ; SP address = 0xFFFE
+    mov bp, 0xFFFE  ; BP address = 0xFFFE
 
-.SCREENCLEARLOOP:
-    mov byte [ es: si ], 0
-    mov byte [ es: si + 1 ], 0x0A
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; clear & green
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si,    0                    ; SI reset
+        
+.SCREENCLEARLOOP:                   ; clear loop
+    mov byte [ es: si ], 0          ; clear
+    mov byte [ es: si + 1 ], 0x0A   ; set black background & green text
 
-    add si, 2
-    cmp si, 80 * 25 * 2
+    add si, 2                       ; next
 
-    jl .SCREENCLEARLOOP
-; "START" message ;	
-	push	MESSAGE1
-	push	0
-	push	0
-	call	PRINTMESSAGE
-	add	sp,	6
+    cmp si, 80 * 25 * 2             ; screen size = 80 * 25 * 2
+    jl .SCREENCLEARLOOP             ; if less > loop
 
-; "TIME" 	message ;
-	push 	TIMEMESSAGE
-	push 	1
-	push	0
-	call	PRINTMESSAGE
-	add	sp,	6
-
-; TIME PRINT ;
-	mov ah,2h
-    int 1ah
-
-    mov ah, 0x0e
-    mov al, CH
-    and al,0xf0
-    shr al,0x04
-    add al,0x30   
-    int 0x10
-
-    mov al, CH
-    and al,0x0f
-    add al,0x30
-    int 0x10
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; "START" MESSAGE
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push MESSAGE1               ; "START" message push stack
+    push 0                      
+    push 0                      ; in (0,0)
+    call PRINTMESSAGE           ; PRINT
+    add  sp, 6                  ; remove parameter
     
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; "TIME" MESSAGE
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push 	TIMEMESSAGE         ; "TIME" message push stack
+	push 	1
+	push	0                   ; in (0, 1)
+	call	PRINTMESSAGE        ; PRINT
+	add	sp,	6                   ; remove parameter
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; "TIME" PRINT
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ah,2h                           
+    int 1ah                             ; Get local time
+
+    mov ah, 0x0e
+    mov al, CH
+    and al,0xf0
+    shr al,0x04
+    add al,0x30
+    mov byte [ es : (160*1)+32],al   
+ 
+    mov al, CH
+    and al,0x0f
+    add al,0x30    
+    mov byte [ es : (160*1)+34],al   
 
     mov ah, 0x0e
     mov al, ":"
-    int 0x10
-
+    mov byte [ es : (160*1)+36],al 
 
     mov ah, 0x0e
     mov al, CL
     and al,0xf0
     shr al,0x04
-    add al,0x30   
-    int 0x10
-
+    add al,0x30
+    mov byte [ es : (160*1)+38],al    
+ 
     mov al, CL
     and al,0x0f
     add al,0x30
-    int 0x10
+    mov byte [ es : (160*1)+40],al 
 
     mov ah, 0x0e
     mov al, ":"
-    int 0x10
-
+    mov byte [ es : (160*1)+42],al 
 
     mov ah, 0x0e
     mov al, DH
     and al,0xf0
     shr al,0x04
-    add al,0x30   
-    int 0x10
+    add al,0x30
+    mov byte [ es : (160*1)+44],al    
 
     mov al, DH
     and al,0x0f
     add al,0x30
-    int 0x10
+    mov byte [ es : (160*1)+46],al 
 
-; "OS IMAGE LOADING" message ;
-	push	IMAGELOADINGMESSAGE
-	push	2
-	push	0
-	call	PRINTMESSAGE
-	add	sp,	6
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; "OS IMAGE LOADING" message
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push IMAGELOADINGMESSAGE    ; "OS IMAGE LOADING" message push stack         
+    push 2                                           
+    push 0                      ; in (0, 2)                    
+    call PRINTMESSAGE           ; PRINT                          
+    add  sp, 6                  ; remove parameter                             
+        
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; "OS IMAGE LOADING"
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; RESET DISK
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+RESETDISK:                          ; Start reset disk
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; BIOS Reset
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; service num 0, drive num 0(Floppy)
+    mov ax, 0
+    mov dl, 0              
+    int 0x13
+    jc  HANDLEDISKERROR                     ; error
+        
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Read sector from disk
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov si, 0x1000               
+    mov es, si                          ; es = To copy OS image in (0x100004)
+    mov bx, 0x0000                      ; TO Copy in (0x10004:0000) 
 
-	; OS image loading ;
-	; Reset ;
-	RESERRDISK:
+    mov di, word [ TOTALSECTORCOUNT ]   ; di = OS image sector
+READDATA:                               ; READ disk
+    ; Comfirm that read all
+    cmp di, 0                           ; compare sector count
+    je  READEND                         ; equle > READEND
+    sub di, 0x1                         ; different > sector count--
 
-	; DIOS Reset Func call ;
-	mov	ax,	0
-	mov	dl,	0
-	int 0x13
-
-	jc	HANDLEDISKERROR
-
-	; Read sector ;
-	mov	si,	0x1000
-	mov	es,	si
-	mov	bx,	0x0000
-
-	mov	di,	word [TOTALSECTORCOUNT]
-
-READDATA:
-	;Test
-	cmp	di,	0
-	je	READEND	
-	sub	di,	0x1
-
-	;BIOS Read Func call ;
-	mov	ah,	0x02
-	mov	al,	0x1
-	mov	ch,	byte	[TRACKNUMBER]
-	mov	cl,	byte	[SECTORNUMBER]
-	mov	dh,	byte	[HEADNUMBER]
-	mov	dl,	0x00
-	int	0x13
-	jc	HANDLEDISKERROR
-
-	;count track, head, sector that copy
-	add	si,	0x0020
-	mov	es,	si
-
-	mov	al,	byte	[SECTORNUMBER]
-	add	al, 0x01
-	mov	byte	[SECTORNUMBER],	al
-	cmp	al,	19
-	jl	READDATA
-
-	xor byte	[HEADNUMBER],	0x01
-	mov byte	[SECTORNUMBER],	0x01
-
-	cmp byte	[HEADNUMBER], 0x00
-	jne	READDATA
-
-	add	byte [TRACKNUMBER],	0x01
-	jmp	READDATA
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; BIOS Read Function ȣ��
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    mov ah, 0x02                        ; BIOS ���� ��ȣ 2(Read Sector)
+    mov al, 0x1                         ; ���� ���� ���� 1
+    mov ch, byte [ TRACKNUMBER ]        ; ���� Ʈ�� ��ȣ ����
+    mov cl, byte [ SECTORNUMBER ]       ; ���� ���� ��ȣ ����
+    mov dh, byte [ HEADNUMBER ]         ; ���� ��� ��ȣ ����
+    mov dl, 0x00                        ; ���� ����̺� ��ȣ(0=Floppy) ����
+    int 0x13    
+    jc HANDLEDISKERROR                 
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; ������ ��巹���� Ʈ��, ���, ���� ��巹�� ���
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    add si, 0x020      ; 512(0x200)����Ʈ��ŭ �о����Ƿ�, �̸� ���׸�Ʈ ��������
+                        ; ������ ��ȯ
+    mov es, si          ; ES ���׸�Ʈ �������Ϳ� ���ؼ� ��巹���� �� ���� ��ŭ ����
+    
+    ; �� ���͸� �о����Ƿ� ���� ��ȣ�� ������Ű�� ������ ����(18)���� �о����� �Ǵ�
+    ; ������ ���Ͱ� �ƴϸ� ���� �б�� �̵��ؼ� �ٽ� ���� �б� ����
+    mov al, byte [ SECTORNUMBER ]       ; ���� ��ȣ�� AL �������Ϳ� ����
+    add al, 0x01                        ; ���� ��ȣ�� 1 ����
+    mov byte [ SECTORNUMBER ], al       ; ������Ų ���� ��ȣ�� SECTORNUMBER�� �ٽ� ����
+    cmp al, 19                           ; ������Ų ���� ��ȣ�� 19�� ��
+    jl READDATA                         ; ���� ��ȣ�� 19 �̸��̶�� READDATA�� �̵�
+    
+    ; ������ ���ͱ��� �о�����(���� ��ȣ�� 19�̸�) ��带 ���(0->1, 1->0)�ϰ�, 
+    ; ���� ��ȣ�� 1�� ����
+    xor byte [ HEADNUMBER ], 0x01       ; ��� ��ȣ�� 0x01�� XOR�Ͽ� ���(0->1, 1->1)
+    mov byte [ SECTORNUMBER ], 0x01     ; ���� ��ȣ�� �ٽ� 1�� ����
+    
+    ; ���� ��尡 1->0�� �ٲ������ ���� ��带 ��� ���� ���̹Ƿ� �Ʒ��� �̵��Ͽ�
+    ; Ʈ�� ��ȣ�� 1 ����
+    cmp byte [ HEADNUMBER ], 0x00       ; ��� ��ȣ�� 0x00�� ��
+    jne READDATA                        ; ��� ��ȣ�� 0�� �ƴϸ� READDATA�� �̵�
+    
+    ; Ʈ���� 1 ������Ų ��, �ٽ� ���� �б�� �̵�
+    add byte [ TRACKNUMBER ], 0x01      ; Ʈ�� ��ȣ�� 1 ����
+    jmp READDATA                        ; READDATA�� �̵�
 READEND:
 
-	;"OS IMAGE COMPLETE" message;
-	push LOADINGCOMPLETEMESSAGE
-	push 2
-	push 20
-	call PRINTMESSAGE
-	add sp,	6
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; OS �̹����� �Ϸ�Ǿ��ٴ� �޽����� ���
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    push LOADINGCOMPLETEMESSAGE     ; ����� �޽����� ��巹���� ���ÿ� ����
+    push 2                           ; ȭ�� Y ��ǥ(1)�� ���ÿ� ����
+    push 20                         ; ȭ�� X ��ǥ(20)�� ���ÿ� ����
+    call PRINTMESSAGE               ; PRINTMESSAGE �Լ� ȣ��
+    add  sp, 6                      ; ������ �Ķ���� ����
 
-	; OS IMAGE RUN ;
-	jmp 0x1000:0x0000
-
-;FUNC;
-;DISK ERROR;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; �ε��� ���� OS �̹��� ����    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    jmp 0x1020:0x0000
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   �Լ� �ڵ� ����
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ��ũ ������ ó���ϴ� �Լ�   
 HANDLEDISKERROR:
-	push DISKERRORMESSAGE
-	push 1
-	push 20
-	call PRINTMESSAGE
-	
-	jmp $
-	
+    push DISKERRORMESSAGE   ; ���� ���ڿ��� ��巹���� ���ÿ� ����
+    push 2                  ; ȭ�� Y ��ǥ(1)�� ���ÿ� ����
+    push 20                 ; ȭ�� X ��ǥ(20)�� ���ÿ� ����
+    call PRINTMESSAGE       ; PRINTMESSAGE �Լ� ȣ��
+    
+    jmp $                   ; ���� ��ġ���� ���� ���� ����
 
+; �޽����� ����ϴ� �Լ�
+;   PARAM: x ��ǥ, y ��ǥ, ���ڿ�
 PRINTMESSAGE:
-	push bp
-	mov bp, sp
-	
-	push es
-	push si
-	push di
-	push ax
-	push cx
-	push dx
-	
-	mov ax, 0xB800
-	mov es, ax
-	
-	;count video memory;
-	mov ax, word [bp+6]
-	mov si, 160
-	mul si
-	mov di, ax
-	
-	mov ax, word[bp+4]
-	mov si, 2
-	mul si
-	add di, ax
+    push bp         ; ���̽� ������ ��������(BP)�� ���ÿ� ����
+    mov bp, sp      ; ���̽� ������ ��������(BP)�� ���� ������ ��������(SP)�� ���� ����
+                    ; ���̽� ������ ��������(BP)�� �̿��ؼ� �Ķ���Ϳ� ������ ����
 
-	mov si, word[bp+8]
-.MESSAGELOOP:
-	mov cl, byte[si]
-	cmp cl, 0
-	je .MESSAGEEND
+    push es         ; ES ���׸�Ʈ �������ͺ��� DX �������ͱ��� ���ÿ� ����
+    push si         ; �Լ����� �ӽ÷� ����ϴ� �������ͷ� �Լ��� ������ �κп���
+    push di         ; ���ÿ� ���Ե� ���� ���� ���� ������ ����
+    push ax
+    push cx
+    push dx
+    
+    ; ES ���׸�Ʈ �������Ϳ� ���� ��� ��巹�� ����
+    mov ax, 0xB800              ; ���� �޸� ���� ��巹��(0x0B8000)�� 
+                                ; ���׸�Ʈ �������� ������ ��ȯ
+    mov es, ax                  ; ES ���׸�Ʈ �������Ϳ� ����
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; X, Y�� ��ǥ�� ���� �޸��� ��巹���� �����
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; Y ��ǥ�� �̿��ؼ� ���� ���� ��巹���� ����
+    mov ax, word [ bp + 6 ]     ; �Ķ���� 2(ȭ�� ��ǥ Y)�� AX �������Ϳ� ����
+    mov si, 160                 ; �� ������ ����Ʈ ��(2 * 80 �÷�)�� SI �������Ϳ� ����
+    mul si                      ; AX �������Ϳ� SI �������͸� ���Ͽ� ȭ�� Y ��巹�� ���
+    mov di, ax                  ; ���� ȭ�� Y ��巹���� DI �������Ϳ� ����
+    
+    ; X �·Ḧ �̿��ؼ� 2�� ���� �� ���� ��巹���� ����
+    mov ax, word [ bp + 4 ]     ; �Ķ���� 1(ȭ�� ��ǥ X)�� AX �������Ϳ� ����
+    mov si, 2                   ; �� ���ڸ� ��Ÿ���� ����Ʈ ��(2)�� SI �������Ϳ� ����
+    mul si                      ; AX �������Ϳ� SI �������͸� ���Ͽ� ȭ�� X ��巹���� ���
+    add di, ax                  ; ȭ�� Y ��巹���� ���� X ��巹���� ���ؼ�
+                                ; ���� ���� �޸� ��巹���� ���
+    
+    ; ����� ���ڿ��� ��巹��      
+    mov si, word [ bp + 8 ]     ; �Ķ���� 3(����� ���ڿ��� ��巹��)
 
-	mov byte [es:di], cl
+.MESSAGELOOP:               ; �޽����� ����ϴ� ����
+    mov cl, byte [ si ]     ; SI �������Ͱ� ����Ű�� ���ڿ� ��ġ���� �� ���ڸ� 
+                            ; CL �������Ϳ� ����
+                            ; CL �������ʹ� CX ���������� ���� 1����Ʈ�� �ǹ�
+                            ; ���ڿ��� 1����Ʈ�� ����ϹǷ� CX ���������� ���� 1����Ʈ�� ���
+    
+    cmp cl, 0               ; ����� ���ڿ� 0�� ��
+    je .MESSAGEEND          ; ������ ������ ���� 0�̸� ���ڿ��� ����Ǿ�����
+                            ; �ǹ��ϹǷ� .MESSAGEEND�� �̵��Ͽ� ���� ��� ����
 
-	add si, 1
-	add di, 2
+    mov byte [ es: di ], cl ; 0�� �ƴ϶�� ���� �޸� ��巹�� 0xB800:di�� ���ڸ� ���
+    
+    add si, 1               ; SI �������Ϳ� 1�� ���Ͽ� ���� ���ڿ��� �̵�
+    add di, 2               ; DI �������Ϳ� 2�� ���Ͽ� ���� �޸��� ���� ���� ��ġ�� �̵�
+                            ; ���� �޸𸮴� (����, �Ӽ�)�� ������ �����ǹǷ� ���ڸ� ����Ϸ���
+                            ; 2�� ���ؾ� ��
 
-	jmp .MESSAGELOOP
+    jmp .MESSAGELOOP        ; �޽��� ��� ������ �̵��Ͽ� ���� ���ڸ� ���
 
 .MESSAGEEND:
-	pop dx
-	pop cx
-	pop ax
-	pop di
-	pop si
-	pop es
-	pop bp
-	ret
-	
-;DATA;
-MESSAGE1:    db 'MINT64 OS Boot Loader Start~!!', 0
-TIMEMESSAGE:	db	'Currunt TIme : ', 0
+    pop dx      ; �Լ����� ����� ���� DX �������ͺ��� ES �������ͱ����� ���ÿ�
+    pop cx      ; ���Ե� ���� �̿��ؼ� ����
+    pop ax      ; ������ ���� �������� �� �����Ͱ� ���� ���� ������ 
+    pop di      ; �ڷᱸ��(Last-In, First-Out)�̹Ƿ� ����(push)�� ��������
+    pop si      ; ����(pop) �ؾ� ��
+    pop es
+    pop bp      ; ���̽� ������ ��������(BP) ����
+    ret         ; �Լ��� ȣ���� ���� �ڵ��� ��ġ�� ����
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   ������ ����
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ��Ʈ �δ� ���� �޽���
+MESSAGE1:               db  'MINT64 OS Boot Loader Start~!!', 0 ; ����� �޽��� ����
+TIMEMESSAGE:            db  'Current TIme : ', 0
+DISKERRORMESSAGE:       db  'DISK Error~!!', 0
+IMAGELOADINGMESSAGE:    db  'OS Image Loading...', 0
+LOADINGCOMPLETEMESSAGE: db  'Complete~!!', 0
 
-DISKERRORMESSAGE:		db	'DISK Error~!!', 0
-IMAGELOADINGMESSAGE:	db	'OS Image Loading...', 0
-LOADINGCOMPLETEMESSAGE:	db	'Complete~!!', 0
 
-SECTORNUMBER:		db	0x02
-HEADNUMBER:		db	0x00
-TRACKNUMBER:		db	0x00
+; ��ũ �б⿡ ���õ� ������
+SECTORNUMBER:           db  0x02    ; OS �̹����� �����ϴ� ���� ��ȣ�� �����ϴ� ����
+HEADNUMBER:             db  0x00    ; OS �̹����� �����ϴ� ��� ��ȣ�� �����ϴ� ����
+TRACKNUMBER:            db  0x00    ; OS �̹����� �����ϴ� Ʈ�� ��ȣ�� �����ϴ� ����
+    
+times 510 - ( $ - $$ )    db    0x00    ; $ : ���� ������ ��巹��
+                                        ; $$ : ���� ����(.text)�� ���� ��巹��
+                                        ; $ - $$ : ���� ������ �������� �ϴ� ������
+                                        ; 510 - ( $ - $$ ) : ������� ��巹�� 510����
+                                        ; db 0x00 : 1����Ʈ�� �����ϰ� ���� 0x00
+                                        ; time : �ݺ� ����
+                                        ; ���� ��ġ���� ��巹�� 510���� 0x00���� ä��
 
-times 510 - ( $ - $$ )    db    0x00
-
-db 0x55
-db 0xAA
+db 0x55             ; 1����Ʈ�� �����ϰ� ���� 0x55
+db 0xAA             ; 1����Ʈ�� �����ϰ� ���� 0xAA
+                    ; ��巹�� 511, 512�� 0x55, 0xAA�� �Ἥ ��Ʈ ���ͷ� ǥ����
